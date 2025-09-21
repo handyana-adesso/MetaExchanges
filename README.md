@@ -109,9 +109,7 @@ flowchart LR
 
 2. Sequence Diagram
 
-	- BUY Flow
-	
-	Shows what happens when a BUY order processed.
+	- BUY Flow: shows what happens when a BUY order processed.
 	```mermaid
 	sequenceDiagram
 		autonumber
@@ -157,9 +155,7 @@ flowchart LR
 		Client-->>User: Return JSON execution plan
 	```
 
-	- SELL Flow
-	
-	Shows what happens when a SELL order processed.
+	- SELL Flow: shows what happens when a SELL order processed.
 	```mermaid
 	sequenceDiagram
 		autonumber
