@@ -203,7 +203,7 @@ flowchart LR
 		Planner[ExecutionPlanner]
 		Loader[ExchangesLoader]
 		Models["(Models)"]
-		Precisions["(Precision)"]
+		Precision["(Precision)"]
 	end
 
 	CLIProgram --> Loader
