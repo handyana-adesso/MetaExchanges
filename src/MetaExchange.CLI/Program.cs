@@ -1,6 +1,8 @@
-﻿using MetaExchange.Core.Enums;
+﻿using MetaExchange.Core;
+using MetaExchange.Core.Enums;
 using MetaExchange.Core.Services;
 using System.Globalization;
+using System.Text.Json;
 
 if (args.Length < 3)
 {
@@ -28,3 +30,17 @@ var output = args.Length > 3 ? args[3] : null;
 
 // Load exchanges
 var exchanges = ExchangesLoader.LoadExchanges(folder);
+
+// Calculate execution plan
+var planner = new ExecutionPlanner();
+var executionPlan = planner.Execute(exchanges, side, amount);
+
+// Serialize to JSON for output
+var json = JsonSerializer.Serialize(executionPlan, options: new() { WriteIndented = true });
+Console.WriteLine(json);
+
+if (!string.IsNullOrWhiteSpace(output))
+{
+    File.WriteAllText(output, json);
+    Console.WriteLine($"Saved to: {output}");
+}
