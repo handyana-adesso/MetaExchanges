@@ -41,13 +41,15 @@ public sealed class ExecutionPlanner
             {
                 quantity = Math.Min(remaining, Math.Min(priceLevel.Size, btcDict[priceLevel.ExchangeId]));
             }
+
+            quantity = Precision.FloorToStep(quantity, Precision.BtcStep);
             
             if (quantity <= 0)
             {
                 continue;
             }
 
-            var lineNotional = Math.Round(priceLevel.Price * quantity, 8, MidpointRounding.ToZero);
+            var lineNotional = Math.Round(priceLevel.Price * quantity, Precision.EurInternalDp, MidpointRounding.ToZero);
 
             orders.Add(new(priceLevel.ExchangeId, side, priceLevel.Price, quantity, lineNotional));
 
