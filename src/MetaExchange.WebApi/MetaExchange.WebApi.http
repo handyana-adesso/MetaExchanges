@@ -1,0 +1,14 @@
+@MetaExchange.WebApi_HostAddress = http://localhost:5257
+
+### Health Check
+GET {{MetaExchange.WebApi_HostAddress}}/health
+
+### BUY 0.405 BTC
+POST {{MetaExchange.WebApi_HostAddress}}/execute/BUY/0.405
+Accept: application/json
+
+### SELL 0.015 BTC
+POST {{MetaExchange.WebApi_HostAddress}}/execute/SELL/0.015
+Accept: application/json
+
+###
