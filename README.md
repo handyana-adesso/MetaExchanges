@@ -113,18 +113,45 @@ flowchart LR
 	sequenceDiagram
 		autonumber
 		participant User
-		participant CLI as Console
+		participant Client as Console
 		participant Loader as ExchangeLoader
 		participant Planner as ExecutionPlanner
  
-		User->>CLI: Request BUY 1.0
-		CLI->>Loader: Load JSON order books
-		Loader-->>CLI: List of Exchanges
-		CLI->>Planner: Execute(exchanges, BUY, 1.0)
+		User->>Client: Request BUY 1.0
+		Client->>Loader: Load JSON order books
+		Loader-->>Client: List of Exchanges
+		Client->>Planner: Execute(exchanges, BUY, 1.0)
+
+		Note over Planner: Build price levels from all exchanges' <br/>ASKS (sellers)
+		Planner->>Planner: Filter invalid price levels (price <= 0 or size <= 0)
 		Planner->>Planner: Sort asks by price ASC (cheapest first)
-		Planner->>Planner: Allocate BTC by EUR balance
-		Planner-->>CLI: ExecutionPlan
-		CLI-->>User: Print JSON plan
+ 
+		loop For each ask level (exchangeId, price, levelSize)
+			Note over Planner: Compute feasible quantity at this level
+			Planner->>Planner: maxByMoney = eurDict[exchangeId] / price
+			Planner->>Planner: cappedQuantityRaw = min(remaining, <br/>levelSize, maxByMoney)
+			Planner->>Planner: cappedQuantity = FloorToStep(cappedQuantityRaw, 0.00000001) %% BTC precision (8dp)
+ 
+			alt cappedQuantity > 0
+				Planner->>Planner: lineNotional = FloorToStep(price * cappedQuantity, 8)
+				Planner-->>Planner: Append ExecutionOrder(exchangeId, BUY, price, cappedQuantity, lineNotional)
+				Note over Planner: Update per-exchange balances
+				Planner->>Planner: eurDict[exchageId] -= lineNotional
+				Planner->>Planner: btcDict[exchageId] += cappedQuantity
+				Planner->>Planner: remaining -= cappedQuantity<br/>filled += cappedQuantity<br/>notional += lineNotional
+			else cappedQuantity == 0
+				Planner->>Planner: Skip this level
+			end
+ 
+			opt remaining == 0
+				Planner->>Planner: break
+			end
+		end
+
+		Planner->>Planner: WeighedAveragePrice = (filled > 0) ? notional / filled : 0
+		Planner->>Planner: Build PostTradeBalances from eurDict[exchangeId], btcDict[exchangeId]
+		Planner-->>Client: ExecutionPlan
+		Client-->>User: Return JSON execution plan
 	```
 
 	- SELL Flow
@@ -133,34 +160,45 @@ flowchart LR
 	sequenceDiagram
 		autonumber
 		participant User
-		participant CLI as Console
+		participant Client as Console
 		participant Loader as ExchangeLoader
 		participant Planner as ExecutionPlanner
  
-		User->>CLI: Request SELL 1.0
-		CLI->>Loader: Load JSON order books
-		Loader-->>CLI: List of Exchanges
-		CLI->>Planner: Execute(exchanges, SELL, 1.0)
+		User->>Client: Request SELL 1.0
+		Client->>Loader: Load JSON order books
+		Loader-->>Client: List of Exchanges
+		Client->>Planner: Execute(exchanges, SELL, 1.0)
 
+		Note over Planner: Build price levels from all exchanges' <br/>BIDS (buyers)
+		Planner->>Planner: Filter invalid levels (price <= 0 or size <= 0)
 		Planner->>Planner: Sort bids by price DESC (highest first)
 
-		loop For each bid level
-			Planner->>Planner: cappedQuantity = min(remaining, levelSize, BTC balance)
+		loop For each bid level (exchangeId, price, levelSize)
+			Note over Planner: Compute feasible quantity at this level
+			Planner->>Planner: maxByBtc = btcDict[exchangeId] %% Max BTC this exchange can sell
+			Planner->>Planner: CappedQuantityRaw = min(remaining, levelSize, BTC balance)
+			Planner->>Planner: cappedQuantity = FloorToStep(cappedQuantityRaw, 0.00000001) %% BTC precision (8 dp)
+
 			alt cappedQuantity > 0
-				Planner->>Planner: lineNotional = price * cappedQuantity
-				Planner->>Planner: Update balances:<br/>btc -= cappedQuantity<br/>eur += lineNotional
-				Planner-->>Planner: Add ExecutionOrder
-				Planner->>Planner: remining -= cappedQuantity<br/>filled += cappedQuantity<br/>notional += lineNotional
-			else
-				Planner->>Planner: Skip empty level
+				Planner->>Planner: lineNotional = FloorToStep(price * cappedQuantity, 8)
+				Planner-->>Planner: Append ExecutionOrder(exchangeId, SELL, price, cappedQuantity, lineNotional)
+				Note over Planner: Update per-exchange balances
+				Planner->>Planner: btcDict[exchangeId] -= cappedQuantity
+				Planner->>Planner: eurDict[exchangeId] += lineNotional
+				Planner->>Planner: remaining -= cappedQuantity<br/>filled += cappedQuantity<br/>notional += lineNotional
+			else cappedQuantity == 0
+				Planner->>Planner: Skip this level
 			end
+
 			opt remaining == 0
 				Planner->>Planner: Break loop
 			end
 		end
 
-		Planner-->>CLI: ExecutionPlan
-		CLI-->>User: Print JSON plan
+		Planner->>Planner: WeighedAveragePrice = (filled > 0) ? notional / filled : 0
+		Planner->>Planner: Build PostTradebalances from eurDict[exchangeId], btcDict[exchangeId]
+		Planner-->>Client: ExecutionPlan
+		Client-->>User: Return JSON execution plan
 	```
 
 3. Class Diagram 
