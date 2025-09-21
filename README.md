@@ -85,7 +85,163 @@ dotnet run ../../orderbooks BUY 1.0 result.json
 
 ## UML Diagrams
 1. Architecture Overview
+This diagram shows how the Console App use the core logic.
+```mermaid
+flowchart LR
+	subgraph CLI[MetaExchange.CLI]
+		CLIProgram[Program.cs]
+	end
+
+	subgraph Core[MetaExchange.Core]
+		Planner[ExecutionPlanner]
+		Loader[ExchangesLoader]
+		Models["(Models)"]
+	end
+
+	CLIProgram --> Loader
+	CLIProgram --> Planner
+
+	Planner --> Models
+	Loader --> Models
+```
+
 2. Sequence Diagram
+
 	- BUY Flow
+	Shows what happens when a BUY order processed.
+	```mermaid
+	sequenceDiagram
+		autonumber
+		participant User
+		participant CLI as Console
+		participant Loade as ExchangeLoader
+		participant Planner as ExecutionPlanner
+ 
+		User->>CLI: Request BUY 1.0
+		CLI->>Loader: Load JSON order books
+		Loader-->>CLI: List of Exchanges
+		CLI->>Planner: Execute(exchanges, BUY, 1.0)
+		Planner->>Planner: Sort asks by price ASC (cheapest first)
+		Planner->>Planner: Allocate BTC by EUR balance
+		Planner-->>CLI: ExecutionPlan
+		CLI-->>User: Print JSON plan
+	```
+
 	- SELL Flow
+	Shows what happens when a SELL order processed.
+	```mermaid
+	sequenceDiagram
+		autonumber
+		participant User
+		participant CLI as Console
+		participant Loade as ExchangeLoader
+		participant Planner as ExecutionPlanner
+ 
+		User->>CLI: Request SELL 1.0
+		CLI->>Loader: Load JSON order books
+		Loader-->>CLI: List of Exchanges
+		CLI->>Planner: Execute(exchanges, SELL, 1.0)
+
+		Planner->>Planner: Sort bids by price DESC (highest first)
+
+		loop For each bid level
+			Planner->>Planner: cappedQuantity = min(remaining, levelSize, BTC balance)
+			alt cappedQuantity > 0
+				Planner->>Planner: lineNotional = price * cappedQuantity
+				Planner->>Planner: Update balances:<br/>btc -= cappedQuantity<br/>eur += lineNotional
+				Planner-->>Planner: Add ExecutionOrder
+				Planner->>Planner: remining -= cappedQuantity<br/>filled += cappedQuantity<br/>notional += lineNotional
+			else
+				Planner->>Planner: Skip empty level
+			end
+			opt remaining == 0
+				Planner->>Planner: Break loop
+			end
+		end
+
+		Planner-->>CLI: ExecutionPlan
+		CLI-->>User: Print JSON plan
+	```
+
 3. Class Diagram 
+```mermaid
+classDiagram
+	class ExecutionPlanner {
+		+Execute(exchanges, side, amountBtc): ExecutionPlan
+		-BuildPriceLevels(exchanges, side): IEnumerable<PriceLevel>
+		-SortPriceLevels(priceLevels, side): IEnumerable<PriceLevel>
+	}
+
+	class ExchangeLoader {
+		+LoadExchanges(folder): IReadOnlyList<Exchange>
+	}
+
+	class Exchange {
+		+Id: string
+		+AvailableFunds: AvailableFunds
+		+OrderBook: OrderBook
+	}
+
+	class AvailableFunds {
+		+Crypto: decimal
+		+Euro: decimal
+	}
+
+	class OrderBook {
+		+Bids: List<WrappedOrder>
+		+Asks: List<WrappedOrder>
+	}
+
+	class WrappedOrder {
+		+Order: Order
+	}
+
+	class Order {
+		+Id: string
+		+Time: DateTime
+		+Type: string
+		+Kind: string
+		+Amount: decimal
+		+Price: decimal
+	}
+
+	class PriceLevel {
+		+ExchangeId: string
+		+Price: decimal
+		+Size: decimal
+	}
+
+	class ExecutionPlan {
+		+Side: string
+		+RequestedAmountBtc: decimal
+		+FilledAmountBtc: decimal
+		+ShortfallBtc: decimal
+		+WeightedAveragePrice: decimal
+		+TotalNotionalEur: decimal
+		+Orders: List<ExecutionOrder>
+		+PostTradeBalances: List<PostTradeBalace>
+	}
+
+	class ExecutionOrder {
+		+ExchangeId: string
+		+Price: decimal
+		+QuantityBtc: decimal
+		+NotionalEur: decimal
+	}
+
+	class PostTradeBalance {
+		+ExchangeId: string
+		+Euro: decimal
+		+Crypto: decimal
+	}
+
+	ExecutionPlanner --> ExecutionPlan
+	ExecutionPlanner --> PriceLevel
+	ExchangeLoader --> Exchange
+	Exchange --> AvailableFunds
+	Exchange --> OrderBook
+	OrderBook --> WrappedOrder
+	WrappedOrder --> Order
+	ExecutionPlan --> ExecutionOrder
+	ExecutionPlan --> PostTradeBalance
+```
