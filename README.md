@@ -158,8 +158,8 @@ Access the endpoints:
   ```
 
 **NOTE**
-If logs show `Now listening on: http://[::]:8080`, ensure that your `docker-compose.yaml` maps host port **5000** to container port **8080**_
-```yml
+If logs show `Now listening on: http://[::]:8080`, ensure that your `docker-compose.yaml` maps host port **5000** to container port **8080**.
+```
 ports:
 	- "5000:8080"
 ```
