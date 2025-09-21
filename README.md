@@ -25,13 +25,13 @@ This project includes:
 ```
 MetaExchange/
 |
-|--- orderbooks/ # Input JSON files
-| |--- exchange-01.json
-| |--- exchange-02.json
+|-- orderbooks/ # Input JSON files
+|	|-- exchange-01.json
+|	|-- exchange-02.json
 |
-|--- src/
-| |--- MetaExchange.CLI/ # Console App
-| |--- MetaExchange.Core/ # Core logic and models
+|-- src/
+|	|-- MetaExchange.CLI/ # Console App
+|	|-- MetaExchange.Core/ # Core logic and models
 ```
 
 ## Example Input JSON Files
@@ -110,6 +110,7 @@ flowchart LR
 2. Sequence Diagram
 
 	- BUY Flow
+	
 	Shows what happens when a BUY order processed.
 	```mermaid
 	sequenceDiagram
@@ -157,6 +158,7 @@ flowchart LR
 	```
 
 	- SELL Flow
+	
 	Shows what happens when a SELL order processed.
 	```mermaid
 	sequenceDiagram
