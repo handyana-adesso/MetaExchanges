@@ -114,7 +114,7 @@ flowchart LR
 		autonumber
 		participant User
 		participant CLI as Console
-		participant Loade as ExchangeLoader
+		participant Loader as ExchangeLoader
 		participant Planner as ExecutionPlanner
  
 		User->>CLI: Request BUY 1.0
