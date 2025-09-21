@@ -159,8 +159,8 @@ Access the endpoints:
 
 **NOTE**
 If logs show `Now listening on: http://[::]:8080`, ensure that your `docker-compose.yaml` maps host port **5000** to container port **8080**_
-```yaml
-porst:
+```yml
+ports:
 	- "5000:8080"
 ```
 
@@ -168,7 +168,7 @@ porst:
 A `MetaExchange.WebApi.http` file is provided at the `MetaExchange.WebApi` folder to make testing easier.
 
 ** Example content:**
-```http
+```bash
 ### Health Check
 GET http://localhost:5000/health
 
