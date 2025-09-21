@@ -22,6 +22,7 @@ This project includes:
   - Updated post-trade balances.
 
 ## Folder Structure
+```
 MetaExchange/
 |
 |--- orderbooks/ # Input JSON files
@@ -31,6 +32,7 @@ MetaExchange/
 |--- src/
 | |--- MetaExchange.CLI/ # Console App
 | |--- MetaExchange.Core/ # Core logic and models
+```
 
 ## Example Input JSON Files
 Example: `orderbooks/exchange-01.json`
