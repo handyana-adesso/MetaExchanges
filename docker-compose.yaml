@@ -1,0 +1,15 @@
+services:
+    metaexchange-webapi:
+        image: metaexchange-webapi:latest
+        container_name: metaexchange-webapi
+        build:
+            context: .
+            dockerfile: src/MetaExchange.WebApi/Dockerfile
+        ports:
+            - "5000:8080"
+        volumes:
+            # Mount local orderbooks folder into container
+            - ./orderbooks:/app/orderbooks:ro
+        environment:
+            DOTNET_ENVIRONMENT: "Production"    
+    
