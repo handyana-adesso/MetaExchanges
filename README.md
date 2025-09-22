@@ -1,14 +1,16 @@
 # MetaExchange
 
-This solution calculates the best way to execute a BTC buy or sell order across multiple exchanges. 
-In finance, this type of system is often called a Smart Order Router (SOR). 
-This implementation focuses on the core logic combining order books, respecting balances, and producing an execution plan.
+This solution calculates **the best way** to execute a BTC **buy** or **sell** order **across multiple exchanges**. 
+In finance, this type of system is often called a **Smart Order Router (SOR)**. 
+This implementation focuses on the core logic combining **order books**, **respecting balances**, and producing an **execution plan**.
 
 This project includes:
 - A **Console App** for batch execution (`MetaExchange.Cli`)
 - A **Core Library** containing the execution algorithm (`MetaExchange.Core`)
 - A **Minimal Web API** (`MetaExchange.WebApi`)
 - **Orderbooks** containing sample JSON inputs
+- xUnit **Unit tests**
+- **HTTP test file** for testing API calls directly from VS, VS Code or JetBrains Rider
 
 ## Features
 - Reads multiple exchange **order book JSON files**.
@@ -24,6 +26,7 @@ This project includes:
   - Updated post-trade balances.
 - Console and Web API share the exact same core algorithm
 - Web API that can be run locally in Docker container.
+- Built-in `.http` file for quick endpoint testing.
 
 ## Folder Structure
 ```
@@ -39,8 +42,11 @@ MetaExchange/
 |	|-- MetaExchange.CLI/ # Console App
 |	|-- MetaExchange.Core/ # Core logic and models
 |	|-- MetaExchange.WebApi/ # Minimal  Web API
+|		|-- MetaExchange.WebApi.http
 |		|-- Dockerfile
 |
+|-- tests/
+	|-- MetaExchange.Tests # Unit tests xUnit
 ```
 
 ## Example Input JSON Files
@@ -399,6 +405,19 @@ classDiagram
 - Quantities are **floored** to 8 dp to prevent invalid order sizes.
 - EUR amounts are also floored to 8 dp to avoid overstating spend or proceeds.
 - Use `decimal` (not `double`) to prevent floating-point inaccuracies.
+
+## Testing
+Run all tests:
+```bash
+dotnet test
+```
+Covers:
+- Cheapest-first buys / highest-first sells
+- Per-exchange EUR/BTC balance caps
+- Precision flooring to 8 dp
+- Weighted average price and totals
+- Partial fills and shortfall behaviour
+- JSON orderbook loading
 
 ## Future Improvements
 This project is intentionally kept **simple** to match the task requirements.
