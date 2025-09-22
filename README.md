@@ -194,7 +194,7 @@ POST http://localhost:5000/execute/SELL/0.015
 This is a fast, lightweight alternative to Postman or curl.
 
 ## UML Diagrams
-1. Architecture Overview: shows how the Console App use the core logic.
+1. Architecture Overview: shows how the Console App and Web API use the core logic.
 ```mermaid
 flowchart LR
 	subgraph CLI[MetaExchange.CLI]
