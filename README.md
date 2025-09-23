@@ -431,9 +431,12 @@ If it grows more complex, we can gradually introduce common architectural patter
 | **Dependency Injection (DI)**	| Manage dependencies more cleanly, especially as the systems grows.	|
 
 ## Summary
-- **Console APP** and **Web API** share the same core algorithm.
+- **Console App** and **Web API** share the same core algorithm.
 - JSON files provide order book and balance data.
+- **JSON loading is async** to avoid blocking on **file I/O**.
 - **Simple, clear structure** with one main algorithm class.
+- `IExchangesLoader` and `IExecutionPlanner` are **registered in DI**.
+- Both **Console App** and **Web API** resolve them via constructor/parameter injection.
 - BUY and SELL execution plans handled cleanly.
 - UML diagrams illustrate the architecture and flows.
 - Future changes can adopt more advanced patterns as needed.

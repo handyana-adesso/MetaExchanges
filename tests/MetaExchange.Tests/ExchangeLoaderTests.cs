@@ -1,12 +1,12 @@
-﻿using MetaExchange.Core.Models;
+﻿using MetaExchange.Core.Abstractions;
+using MetaExchange.Core.Models;
 using MetaExchange.Core.Services;
 using System.Text.Json;
 
 namespace MetaExchange.Tests;
 public class ExchangeLoaderTests
 {
-    [Fact]
-    public void LoadFromFolder_Reads_AllJsonFiles()
+    public async Task LoadFromFolder_Reads_AllJsonFiles()
     {
         var tmp = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tmp);
@@ -22,10 +22,11 @@ public class ExchangeLoaderTests
                 })
             ));
 
-            File.WriteAllText(Path.Combine(tmp, "exchangeA.json"), json);
-            File.WriteAllText(Path.Combine(tmp, "exchangeB.json"), json);
+            await File.WriteAllTextAsync(Path.Combine(tmp, "exchangeA.json"), json);
+            await File.WriteAllTextAsync(Path.Combine(tmp, "exchangeB.json"), json);
 
-            var list = ExchangesLoader.LoadExchanges(tmp);
+            IExchangesLoader loader = new ExchangesLoader();
+            var list = await loader.LoadExchangesAsync(tmp);
 
             Assert.Equal(2, list.Count);
             Assert.All(list, e => Assert.Equal("ExchangeA", e.Id));
@@ -37,19 +38,33 @@ public class ExchangeLoaderTests
     }
 
     [Fact]
-    public void LoadFromFolder_Throws_OnInvalidJson()
+    public async Task LoadFromFolder_Throws_OnInvalidJson()
     {
         var tmp = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tmp);
 
         try
         {
-            File.WriteAllText(Path.Combine(tmp, "bad.json"), "{not-json");
-            Assert.Throws<JsonException>(() => ExchangesLoader.LoadExchanges(tmp));
+            await File.WriteAllTextAsync(Path.Combine(tmp, "bad.json"), "{not-json");
+            IExchangesLoader loader = new ExchangesLoader();
+            await Assert.ThrowsAsync<JsonException>(() => loader.LoadExchangesAsync(tmp));
         }
         finally
         {
-            Directory.Delete(tmp, recursive: true);
+            // Retry deletion in case of lingering file locks
+            for (int i = 0; i < 3; i++)
+            {
+                try
+                {
+                    Directory.Delete(tmp, true);
+                    break;
+                }
+                catch (IOException)
+                {
+                    // Wait briefly and try again
+                    await Task.Delay(50);
+                }
+            }
         }
     }
 }

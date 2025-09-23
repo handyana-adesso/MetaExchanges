@@ -1,14 +1,15 @@
-﻿using MetaExchange.Core.Enums;
+﻿using MetaExchange.Core.Abstractions;
+using MetaExchange.Core.Enums;
 using MetaExchange.Core.Helpers;
 using MetaExchange.Core.Models;
 
 namespace MetaExchange.Core;
 
-public sealed class ExecutionPlanner
+public sealed class ExecutionPlanner : IExecutionPlanner
 {
     public ExecutionPlan Execute(
         IReadOnlyList<Exchange> exchanges,
-        Side side,
+        TradeType tradeType,
         decimal amountBtc)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(amountBtc);
@@ -16,10 +17,10 @@ public sealed class ExecutionPlanner
         var eurDict = exchanges.ToDictionary(e => e.Id, e => e.AvailableFunds.Euro);
         var btcDict = exchanges.ToDictionary(e => e.Id, e => e.AvailableFunds.Crypto);
 
-        var priceLevels = BuildPriceLevels(exchanges, side)
+        var priceLevels = BuildPriceLevels(exchanges, tradeType)
             .Where(p => p.Price > 0 && p.Size > 0);
 
-        priceLevels = SortPriceLevels(priceLevels, side);
+        priceLevels = SortPriceLevels(priceLevels, tradeType);
 
         var orders = new List<ExecutionOrder>();
         decimal remaining = amountBtc, filled = 0, notional = 0;
@@ -32,7 +33,7 @@ public sealed class ExecutionPlanner
             }
 
             decimal quantity = 0m;
-            if (side == Side.BUY)
+            if (tradeType == TradeType.BUY)
             {
                 var maxByMoney = priceLevel.Price > 0 ? eurDict[priceLevel.ExchangeId] / priceLevel.Price : 0;
                 quantity = Math.Min(remaining, Math.Min(priceLevel.Size, maxByMoney));
@@ -51,9 +52,9 @@ public sealed class ExecutionPlanner
 
             var lineNotional = Math.Round(priceLevel.Price * quantity, Precision.EurInternalDp, MidpointRounding.ToZero);
 
-            orders.Add(new(priceLevel.ExchangeId, side, priceLevel.Price, quantity, lineNotional));
+            orders.Add(new(priceLevel.ExchangeId, tradeType, priceLevel.Price, quantity, lineNotional));
 
-            if (side == Side.BUY)
+            if (tradeType == TradeType.BUY)
             {
                 eurDict[priceLevel.ExchangeId] -= lineNotional;
                 btcDict[priceLevel.ExchangeId] += quantity;
@@ -75,7 +76,7 @@ public sealed class ExecutionPlanner
             .ToList();
 
         return new(
-            side,
+            tradeType,
             amountBtc,
             filled,
             amountBtc - filled,
@@ -87,9 +88,9 @@ public sealed class ExecutionPlanner
 
     private static IEnumerable<PriceLevel> BuildPriceLevels(
         IReadOnlyList<Exchange> exchanges,
-        Side side)
+        TradeType side)
     {
-        return side == Side.BUY
+        return side == TradeType.BUY
             ? exchanges.SelectMany(e => e.OrderBook.Asks
                 .Select(a => new PriceLevel(e.Id, a.Order.Price, a.Order.Amount)))
             : exchanges.SelectMany(e => e.OrderBook.Bids
@@ -98,9 +99,9 @@ public sealed class ExecutionPlanner
 
     private static IEnumerable<PriceLevel> SortPriceLevels(
         IEnumerable<PriceLevel> priceLevels,
-        Side side)
+        TradeType side)
     {
-        return side == Side.BUY
+        return side == TradeType.BUY
             ? priceLevels.OrderBy(p => p.Price).ThenByDescending(p => p.Size)
             : priceLevels.OrderByDescending(p => p.Price).ThenByDescending(p => p.Size);
     }

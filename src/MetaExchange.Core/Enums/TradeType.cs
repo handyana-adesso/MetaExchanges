@@ -1,6 +1,6 @@
 ﻿namespace MetaExchange.Core.Enums;
 
-public enum Side
+public enum TradeType
 {
     BUY,
     SELL

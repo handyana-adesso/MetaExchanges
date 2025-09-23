@@ -1,20 +1,37 @@
-﻿using MetaExchange.Core.Models;
+﻿using MetaExchange.Core.Abstractions;
+using MetaExchange.Core.Models;
 using System.Text.Json;
 
 namespace MetaExchange.Core.Services;
-public static class ExchangesLoader
+public sealed class ExchangesLoader : IExchangesLoader
 {
-    public static IReadOnlyList<Exchange> LoadExchanges(string folder)
+    private static readonly JsonSerializerOptions _jsonOptions = new()
     {
-        JsonSerializerOptions options = new()
-        {
-            PropertyNameCaseInsensitive = true,
-            ReadCommentHandling = JsonCommentHandling.Skip,
-            AllowTrailingCommas = true
-        };
+        PropertyNameCaseInsensitive = true,
+        ReadCommentHandling = JsonCommentHandling.Skip,
+        AllowTrailingCommas = true
+    };
 
-        return [.. Directory.GetFiles(folder, "*.json")
-            .Select(f => JsonSerializer.Deserialize<Exchange>(File.ReadAllText(f), options)
-                ?? throw new InvalidOperationException($"Invalid JSON: {f}"))];
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<Exchange>> LoadExchangesAsync(string folder, CancellationToken cancellationToken = default)
+    {
+        if (!Directory.Exists(folder))
+        {
+            throw new InvalidOperationException($"Orderbooks folder not found: {folder}");
+        }
+
+        var files = Directory.EnumerateFiles(folder, "*.json", SearchOption.TopDirectoryOnly);
+        List<Exchange> exchanges = [];
+
+        foreach (var file in files)
+        {
+            await using var fs = File.Open(file, FileMode.Open, FileAccess.Read, FileShare.Read);
+            var exchange = await JsonSerializer.DeserializeAsync<Exchange>(fs, _jsonOptions, cancellationToken)
+                ?? throw new InvalidOperationException($"Invalid JSON in {Path.GetFileName(file)}");
+
+            exchanges.Add(exchange);
+        }
+
+        return exchanges;
     }
 }
