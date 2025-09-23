@@ -1,14 +1,15 @@
-﻿using MetaExchange.Core.Enums;
+﻿using MetaExchange.Core.Abstractions;
+using MetaExchange.Core.Enums;
 using MetaExchange.Core.Helpers;
 using MetaExchange.Core.Models;
 
 namespace MetaExchange.Core;
 
-public sealed class ExecutionPlanner
+public sealed class ExecutionPlanner : IExecutionPlanner
 {
     public ExecutionPlan Execute(
         IReadOnlyList<Exchange> exchanges,
-        Side side,
+        TradeType side,
         decimal amountBtc)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(amountBtc);
@@ -32,7 +33,7 @@ public sealed class ExecutionPlanner
             }
 
             decimal quantity = 0m;
-            if (side == Side.BUY)
+            if (side == TradeType.BUY)
             {
                 var maxByMoney = priceLevel.Price > 0 ? eurDict[priceLevel.ExchangeId] / priceLevel.Price : 0;
                 quantity = Math.Min(remaining, Math.Min(priceLevel.Size, maxByMoney));
@@ -53,7 +54,7 @@ public sealed class ExecutionPlanner
 
             orders.Add(new(priceLevel.ExchangeId, side, priceLevel.Price, quantity, lineNotional));
 
-            if (side == Side.BUY)
+            if (side == TradeType.BUY)
             {
                 eurDict[priceLevel.ExchangeId] -= lineNotional;
                 btcDict[priceLevel.ExchangeId] += quantity;
@@ -87,9 +88,9 @@ public sealed class ExecutionPlanner
 
     private static IEnumerable<PriceLevel> BuildPriceLevels(
         IReadOnlyList<Exchange> exchanges,
-        Side side)
+        TradeType side)
     {
-        return side == Side.BUY
+        return side == TradeType.BUY
             ? exchanges.SelectMany(e => e.OrderBook.Asks
                 .Select(a => new PriceLevel(e.Id, a.Order.Price, a.Order.Amount)))
             : exchanges.SelectMany(e => e.OrderBook.Bids
@@ -98,9 +99,9 @@ public sealed class ExecutionPlanner
 
     private static IEnumerable<PriceLevel> SortPriceLevels(
         IEnumerable<PriceLevel> priceLevels,
-        Side side)
+        TradeType side)
     {
-        return side == Side.BUY
+        return side == TradeType.BUY
             ? priceLevels.OrderBy(p => p.Price).ThenByDescending(p => p.Size)
             : priceLevels.OrderByDescending(p => p.Price).ThenByDescending(p => p.Size);
     }

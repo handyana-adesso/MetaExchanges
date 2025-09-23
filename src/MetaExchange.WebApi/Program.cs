@@ -1,10 +1,14 @@
 using MetaExchange.Core;
+using MetaExchange.Core.Abstractions;
 using MetaExchange.Core.Services;
 using MetaExchange.WebApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+builder.Services.AddSingleton<IExchangesLoader, ExchangesLoader>();
+builder.Services.AddSingleton<IExecutionPlanner, ExecutionPlanner>();
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -23,15 +27,16 @@ app.UseHttpsRedirection();
 app.MapGet("/health", () => Results.Ok(new { Status = "Ok" }));
 
 // Main trading endpoint
-app.MapPost("/execute/{side}/{amountBtc:decimal}", (
-    [AsParameters]ExecutionPlanRequest request, 
-    IConfiguration config
+app.MapPost("/execute/{side}/{amountBtc:decimal}", 
+    async ([AsParameters]ExecutionPlanRequest request, 
+        IExchangesLoader loader,
+        IExecutionPlanner planner,
+        IConfiguration config,
+        CancellationToken cancellationToken
 ) =>
 {
     var folder = config["OrderbooksFolder"] ?? "./orderbooks";
-    var exchanges = ExchangesLoader.LoadExchanges(folder);
-
-    var planner = new ExecutionPlanner();
+    var exchanges = await loader.LoadExchangesAsync(folder, cancellationToken);
     var executionPlan = planner.Execute(exchanges, request.Side, request.AmountBtc);
     return Results.Ok(executionPlan);
 })
