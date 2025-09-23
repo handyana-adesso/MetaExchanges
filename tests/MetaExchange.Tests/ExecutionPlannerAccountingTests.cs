@@ -29,7 +29,7 @@ public class ExecutionPlannerAccountingTests
             GenerateExchange("ExchangeB", eur: 6000m, btc: 0m, asks: new[]{ (1.0m, 10050m) }, bids: Array.Empty<(decimal,decimal)>()),
         };
 
-        var plan = new ExecutionPlanner().Execute(exchanges, Side.BUY, 0.3m);
+        var plan = new ExecutionPlanner().Execute(exchanges, TradeType.BUY, 0.3m);
 
         // Expect 0.2 @ ExA + 0.1 @ ExB
         var exchangeA = plan.PostTradeBalances.Single(b => b.ExchangeId == "ExchangeA");
@@ -53,7 +53,7 @@ public class ExecutionPlannerAccountingTests
             GenerateExchange("ExchangeB", eur: 0m, btc: 0.25m, asks: [], bids: [(0.2m, 20150m)]),
         };
 
-        var plan = new ExecutionPlanner().Execute(exchanges, Side.SELL, 0.3m);
+        var plan = new ExecutionPlanner().Execute(exchanges, TradeType.SELL, 0.3m);
 
         // Expect 0.2 sold at ExA, and 0.1 at ExB
         var exchangeA = plan.PostTradeBalances.Single(b => b.ExchangeId == "ExchangeA");
@@ -76,7 +76,7 @@ public class ExecutionPlannerAccountingTests
             GenerateExchange("ExchangeB", 10000m, 0m, asks: [(0.2m, 10100m)], bids: []),
         };
 
-        var plan = new ExecutionPlanner().Execute(exchanges, Side.BUY, 0.5m);
+        var plan = new ExecutionPlanner().Execute(exchanges, TradeType.BUY, 0.5m);
         var expectedNotional = 0.3m * 10000m + 0.2m * 10100m;
         var expectedWap = expectedNotional / 0.5m;
 

@@ -24,7 +24,7 @@ public class ExecutionPlannerPrecisionTests
         };
         var requested = 0.123456789m;
 
-        var plan = new ExecutionPlanner().Execute(exchanges, Side.BUY, requested);
+        var plan = new ExecutionPlanner().Execute(exchanges, TradeType.BUY, requested);
 
         Assert.Equal(0.12345678m, plan.FilledAmountBtc);
         Assert.Equal(requested - 0.12345678m, plan.ShortfallBtc);
@@ -39,7 +39,7 @@ public class ExecutionPlannerPrecisionTests
             GenerateExchange("Exchange", eur: 1000m, btc: 0m, asks: [(0.00000001m, 25000.12m)])
         };
 
-        var plan = new ExecutionPlanner().Execute(exchanges, Side.BUY, 0.00000001m);
+        var plan = new ExecutionPlanner().Execute(exchanges, TradeType.BUY, 0.00000001m);
 
         var line = plan.Orders.Single();
         // raw: 25_000.12 * 0.00000001 = 0.0002500012
@@ -57,7 +57,7 @@ public class ExecutionPlannerPrecisionTests
             GenerateExchange("Ex", eur: 10000000m, btc: 0m, asks: [(levelSize, 10000m)])
         };
 
-        var plan = new ExecutionPlanner().Execute(exs, Side.BUY, 0.2m);
+        var plan = new ExecutionPlanner().Execute(exs, TradeType.BUY, 0.2m);
 
         Assert.True(plan.FilledAmountBtc <= 0.10000000m + 0.00000001m);
     }

@@ -28,7 +28,7 @@ public class ExecutionPlannerConstraintsAndOrderingTests
             GenerateExchange("ExchangeB", eur: 10000m, btc: 0m, asks: [(1.0m, 10050m)], bids: []),
         };
 
-        var plan = new ExecutionPlanner().Execute(exchanges, Side.BUY, 0.2m);
+        var plan = new ExecutionPlanner().Execute(exchanges, TradeType.BUY, 0.2m);
         // Ensure we didn't buy more than 0.05 on ExchangeA
         var exAOrder = plan.Orders.FirstOrDefault(o => o.ExchangeId == "ExchangeA");
         Assert.NotNull(exAOrder);
@@ -45,7 +45,7 @@ public class ExecutionPlannerConstraintsAndOrderingTests
             GenerateExchange("ExchangeB", eur: 0m, btc: 0.2m,  asks: [], bids: [(1.0m, 20000m)]),
         };
 
-        var plan = new ExecutionPlanner().Execute(exchanges, Side.SELL, 0.2m);
+        var plan = new ExecutionPlanner().Execute(exchanges, TradeType.SELL, 0.2m);
         var exA = plan.Orders.FirstOrDefault(o => o.ExchangeId == "ExchangeA");
         var exB = plan.Orders.FirstOrDefault(o => o.ExchangeId == "ExchangeB");
 
@@ -63,7 +63,7 @@ public class ExecutionPlannerConstraintsAndOrderingTests
             GenerateExchange("Good",  eur: 1000m, btc: 0m, asks: [(0.1m, 10000m)], bids: []),
         };
 
-        var plan = new ExecutionPlanner().Execute(exchanges, Side.BUY, 0.05m);
+        var plan = new ExecutionPlanner().Execute(exchanges, TradeType.BUY, 0.05m);
 
         Assert.Single(plan.Orders);
         Assert.Equal("Good", plan.Orders[0].ExchangeId);
@@ -77,7 +77,7 @@ public class ExecutionPlannerConstraintsAndOrderingTests
             GenerateExchange("Exchange1", eur: 1000000m, btc: 0m, asks: [], bids: []),
         };
 
-        var plan = new ExecutionPlanner().Execute(exchanges, Side.BUY, 1.0m);
+        var plan = new ExecutionPlanner().Execute(exchanges, TradeType.BUY, 1.0m);
         Assert.Equal(0m, plan.FilledAmountBtc);
         Assert.Equal(1.0m, plan.ShortfallBtc);
         Assert.Empty(plan.Orders);
@@ -93,10 +93,10 @@ public class ExecutionPlannerConstraintsAndOrderingTests
                bids: [(1.0m, 9800m), (1.0m, 9900m)]),
         };
 
-        var buy = new ExecutionPlanner().Execute(exchanges, Side.BUY, 0.1m);
+        var buy = new ExecutionPlanner().Execute(exchanges, TradeType.BUY, 0.1m);
         Assert.Equal(10100m, buy.Orders[0].Price); // lowest ask first
 
-        var sell = new ExecutionPlanner().Execute(exchanges, Side.SELL, 0.1m);
+        var sell = new ExecutionPlanner().Execute(exchanges, TradeType.SELL, 0.1m);
         Assert.Equal(9900m, sell.Orders[0].Price); // highest bid first
     }
 }
