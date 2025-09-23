@@ -2,7 +2,7 @@
 
 namespace MetaExchange.Core.Models;
 public record ExecutionPlan(
-    TradeType Side,
+    TradeType TradeType,
     decimal RequestedAmountBtc,
     decimal FilledAmountBtc,
     decimal ShortfallBtc,

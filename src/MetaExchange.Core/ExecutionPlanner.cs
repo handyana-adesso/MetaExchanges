@@ -9,7 +9,7 @@ public sealed class ExecutionPlanner : IExecutionPlanner
 {
     public ExecutionPlan Execute(
         IReadOnlyList<Exchange> exchanges,
-        TradeType side,
+        TradeType tradeType,
         decimal amountBtc)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(amountBtc);
@@ -17,10 +17,10 @@ public sealed class ExecutionPlanner : IExecutionPlanner
         var eurDict = exchanges.ToDictionary(e => e.Id, e => e.AvailableFunds.Euro);
         var btcDict = exchanges.ToDictionary(e => e.Id, e => e.AvailableFunds.Crypto);
 
-        var priceLevels = BuildPriceLevels(exchanges, side)
+        var priceLevels = BuildPriceLevels(exchanges, tradeType)
             .Where(p => p.Price > 0 && p.Size > 0);
 
-        priceLevels = SortPriceLevels(priceLevels, side);
+        priceLevels = SortPriceLevels(priceLevels, tradeType);
 
         var orders = new List<ExecutionOrder>();
         decimal remaining = amountBtc, filled = 0, notional = 0;
@@ -33,7 +33,7 @@ public sealed class ExecutionPlanner : IExecutionPlanner
             }
 
             decimal quantity = 0m;
-            if (side == TradeType.BUY)
+            if (tradeType == TradeType.BUY)
             {
                 var maxByMoney = priceLevel.Price > 0 ? eurDict[priceLevel.ExchangeId] / priceLevel.Price : 0;
                 quantity = Math.Min(remaining, Math.Min(priceLevel.Size, maxByMoney));
@@ -52,9 +52,9 @@ public sealed class ExecutionPlanner : IExecutionPlanner
 
             var lineNotional = Math.Round(priceLevel.Price * quantity, Precision.EurInternalDp, MidpointRounding.ToZero);
 
-            orders.Add(new(priceLevel.ExchangeId, side, priceLevel.Price, quantity, lineNotional));
+            orders.Add(new(priceLevel.ExchangeId, tradeType, priceLevel.Price, quantity, lineNotional));
 
-            if (side == TradeType.BUY)
+            if (tradeType == TradeType.BUY)
             {
                 eurDict[priceLevel.ExchangeId] -= lineNotional;
                 btcDict[priceLevel.ExchangeId] += quantity;
@@ -76,7 +76,7 @@ public sealed class ExecutionPlanner : IExecutionPlanner
             .ToList();
 
         return new(
-            side,
+            tradeType,
             amountBtc,
             filled,
             amountBtc - filled,
