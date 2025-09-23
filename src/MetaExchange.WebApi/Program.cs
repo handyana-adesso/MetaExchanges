@@ -37,7 +37,7 @@ app.UseHttpsRedirection();
 app.MapGet("/health", () => Results.Ok(new { Status = "Ok" }));
 
 // Main trading endpoint
-app.MapPost("/execute/{side}/{amountBtc:decimal}", 
+app.MapPost("/execute/{tradeType}/{amountBtc:decimal}", 
     async ([AsParameters]ExecutionPlanRequest request, 
         IExchangesLoader loader,
         IExecutionPlanner planner,
