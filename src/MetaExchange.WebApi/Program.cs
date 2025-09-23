@@ -1,9 +1,19 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
+
 using MetaExchange.Core;
 using MetaExchange.Core.Abstractions;
 using MetaExchange.Core.Services;
 using MetaExchange.WebApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Make enum serialize as string
+builder.Services.ConfigureHttpJsonOptions(opts =>
+{
+    opts.SerializerOptions.Converters.Add(
+        new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
+});
 
 // Add services to the container.
 builder.Services.AddSingleton<IExchangesLoader, ExchangesLoader>();
@@ -37,7 +47,7 @@ app.MapPost("/execute/{side}/{amountBtc:decimal}",
 {
     var folder = config["OrderbooksFolder"] ?? "./orderbooks";
     var exchanges = await loader.LoadExchangesAsync(folder, cancellationToken);
-    var executionPlan = planner.Execute(exchanges, request.Side, request.AmountBtc);
+    var executionPlan = planner.Execute(exchanges, request.TradeType, request.AmountBtc);
     return Results.Ok(executionPlan);
 })
 .WithName("ExecuteBestPlan")

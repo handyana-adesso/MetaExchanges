@@ -7,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 using System.Globalization;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 if (args.Length < 3)
 {
@@ -17,7 +18,7 @@ if (args.Length < 3)
 
 // Parse CLI arguments
 var folder = args[0];
-if (!Enum.TryParse<TradeType>(args[1], true, out var side))
+if (!Enum.TryParse<TradeType>(args[1], true, out var tradeType))
 {
     Console.WriteLine("Invalid side: use BUY or SELL.");
     return;
@@ -45,10 +46,15 @@ var planner = services.GetRequiredService<IExecutionPlanner>();
 var exchanges = await loader.LoadExchangesAsync(folder);
 
 // Calculate execution plan
-var executionPlan = planner.Execute(exchanges, side, amount);
+var executionPlan = planner.Execute(exchanges, tradeType, amount);
 
 // Serialize to JSON for output
-var json = JsonSerializer.Serialize(executionPlan, options: new() { WriteIndented = true });
+var jsonOptions = new JsonSerializerOptions
+{
+    WriteIndented = true
+};
+jsonOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
+var json = JsonSerializer.Serialize(executionPlan, jsonOptions);
 Console.WriteLine(json);
 
 if (!string.IsNullOrWhiteSpace(output))
