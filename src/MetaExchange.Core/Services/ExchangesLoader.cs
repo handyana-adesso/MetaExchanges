@@ -25,7 +25,7 @@ public sealed class ExchangesLoader : IExchangesLoader
 
         foreach (var file in files)
         {
-            await using var fs = File.OpenRead(file);
+            await using var fs = File.Open(file, FileMode.Open, FileAccess.Read, FileShare.Read);
             var exchange = await JsonSerializer.DeserializeAsync<Exchange>(fs, _jsonOptions, cancellationToken)
                 ?? throw new InvalidOperationException($"Invalid JSON in {Path.GetFileName(file)}");
 
